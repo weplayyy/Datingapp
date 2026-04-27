@@ -3,15 +3,10 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.charm.dating"
     compileSdk = rootProject.ext.compileSdkVersion
-    
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
-    }
-
-    aaptOptions {
-        cruncherEnabled = false
-        useNewCruncher = false
     }
 
     defaultConfig {
