@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account details including coins and charisma score.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "gender": { "type": "string" },
+        "interestedIn": { "type": "string" },
+        "coins": { "type": "number" },
+        "score": { "type": "number", "description": "Global charisma score for ranking" },
+        "battlesWon": { "type": "number" },
+        "battlesLost": { "type": "number" },
+        "isVerified": { "type": "boolean" },
+         "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "coins", "score"]
+    },
+    "Competition": {
+      "title": "Charisma Battle",
+      "description": "A head-to-head competition between two users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "challengerId": { "type": "string" },
+        "opponentId": { "type": "string" },
+        "votesChallenger": { "type": "number" },
+        "votesOpponent": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "ended"] },
+        "winnerId": { "type": "string" },
+        "entryFee": { "type": "number" },
+        "prizePool": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "endsAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "challengerId", "opponentId", "status", "entryFee"]
+    },
+    "Vote": {
+      "title": "Battle Vote",
+      "description": "A vote cast in a competition.",
+      "type": "object",
+      "properties": {
+        "voterId": { "type": "string" },
+        "votedForId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["voterId", "votedForId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Public and private user data."
+    },
+    "/competitions/{compId}": {
+      "schema": "Competition",
+      "description": "Active and past charisma battles."
+    },
+    "/competitions/{compId}/votes/{userId}": {
+      "schema": "Vote",
+      "description": "Individual votes per competition."
+    }
+  }
+}

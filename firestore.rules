@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'coins', 'score'])
+        && data.userId == request.auth.uid
+        && data.displayName is string && data.displayName.size() <= 50
+        && data.coins is number && data.coins >= 0
+        && data.score is number
+        && (data.bio == null || (data.bio is string && data.bio.size() <= 500));
+    }
+
+    function isValidCompetition(data) {
+      return data.keys().hasAll(['id', 'challengerId', 'opponentId', 'status', 'entryFee'])
+        && isValidId(data.id)
+        && data.challengerId == request.auth.uid
+        && data.opponentId is string
+        && data.status in ['active', 'ended']
+        && data.entryFee is number && data.entryFee >= 0;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.isPublic == true;
+      
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().coins == 100; // Starting coins
+      
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        // Only allow updating bio or photoURL via client
+        incoming().diff(existing()).affectedKeys().hasOnly(['bio', 'photoURL', 'displayName', 'gender', 'interestedIn', 'updatedAt'])
+        // coins and score can ONLY be updated by backend (System fields check)
+        && incoming().coins == existing().coins
+        && incoming().score == existing().score
+      );
+    }
+
+    match /competitions/{compId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isVerified() && isValidCompetition(incoming()) && isValidId(compId);
+      
+      // Voting logic - updates the competition document counts
+      allow update: if isSignedIn() && (
+        // Voting action: Only allow incrementing vote counts
+        (
+          incoming().diff(existing()).affectedKeys().hasAll(['votesChallenger']) ||
+          incoming().diff(existing()).affectedKeys().hasAll(['votesOpponent'])
+        ) &&
+        !exists(/databases/$(database)/documents/competitions/$(compId)/votes/$(request.auth.uid))
+      );
+    }
+
+    match /competitions/{compId}/votes/{voterId} {
+      allow get: if isSignedIn();
+      allow create: if isOwner(voterId) && exists(/databases/$(database)/documents/competitions/$(compId));
+    }
+  }
+}

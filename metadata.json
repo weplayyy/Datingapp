@@ -1,0 +1,14 @@
+{
+  "name": "Charm - The Gamified Dating App",
+  "description": "A vibrant dating experience with a coin economy, real-time rankings, and charismatic competitions.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "Dating Profiles",
+    "Coin System",
+    "Leaderboard",
+    "Real-time Comparisons"
+  ]
+}
