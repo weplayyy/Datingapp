@@ -51,9 +51,9 @@ jobs:
           ./gradlew assembleDebug assembleRelease --stacktrace
 
       - name: Sign APK
+        if: ${{ secrets.ANDROID_SIGNING_KEY != null }}
         uses: r0adkll/sign-android-release@v1
         id: sign_app
-        if: secrets.ANDROID_SIGNING_KEY != null
         with:
           releaseDirectory: android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
