@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Charm</string>
+    <string name="title_activity_main">Charm</string>
+    <string name="package_name">com.charm.dating</string>
+    <string name="custom_url_scheme">com.charm.dating</string>
+</resources>
