@@ -4,10 +4,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const firebaseConfig = JSON.parse(fs.readFileSync(path.join(__dirname, "firebase-applet-config.json"), "utf8"));
 
 async function startServer() {
   const app = express();
