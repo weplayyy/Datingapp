@@ -37,12 +37,23 @@ jobs:
           java-version: '21'
           distribution: 'zulu'
 
+      - name: Debug Java
+        run: |
+          echo $JAVA_HOME
+          java -version
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
       - name: Fix problematic PNGs
         run: |
-          find android/app/src/main/res -name "*.png" -exec npx -y jimp-cli {} --output {} \;
+          sudo apt-get update || true
+          sudo apt-get install -y imagemagick || true
+          # Find all PNGs and re-process them with convert to remove metadata and fix chunks
+          find android/app/src/main/res -name "*.png" | while read -r img; do
+            echo "Processing $img"
+            convert "$img" -strip -define png:include-chunk=none "$img" || true
+          done
 
       - name: Fix Gradle Wrapper
         run: |
@@ -50,6 +61,7 @@ jobs:
           # Download a fresh wrapper jar if the current one is corrupt
           wget -O gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.2/gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
+          ./gradlew clean
 
       - name: Build Android Debug APK
         run: |
