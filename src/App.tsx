@@ -315,17 +315,18 @@ const Arena = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-6">
-      <div className="bg-dark-panel p-8 rounded-[2.5rem] border border-dark-border">
-        <p className="text-[#666] font-bold text-[9px] uppercase tracking-[0.2em] mb-3">Victories</p>
-        <span className="text-3xl font-serif italic text-white">0</span>
-      </div>
-      <div className="bg-dark-panel p-8 rounded-[2.5rem] border border-dark-border">
-        <p className="text-[#666] font-bold text-[9px] uppercase tracking-[0.2em] mb-3">Prestige Tier</p>
-        <span className="text-3xl font-serif italic text-white">Bronze</span>
+        <div className="bg-dark-panel p-8 rounded-[2.5rem] border border-dark-border">
+          <p className="text-[#666] font-bold text-[9px] uppercase tracking-[0.2em] mb-3">Victories</p>
+          <span className="text-3xl font-serif italic text-white">0</span>
+        </div>
+        <div className="bg-dark-panel p-8 rounded-[2.5rem] border border-dark-border">
+          <p className="text-[#666] font-bold text-[9px] uppercase tracking-[0.2em] mb-3">Prestige Tier</p>
+          <span className="text-3xl font-serif italic text-white">Bronze</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Leaderboard = () => {
   const [topUsers, setTopUsers] = useState<UserProfile[]>([]);

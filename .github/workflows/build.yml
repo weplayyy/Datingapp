@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [ main, master ]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,25 +34,26 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Validate Gradle Wrapper
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Fix Gradle Wrapper
         run: |
           cd android
-          # If the wrapper is corrupt, we can try to regenerate it if gradle is on path
-          # But usually, it's safer to ensure it's executable
+          # Download a fresh wrapper jar if the current one is corrupt
+          wget -O gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
 
       - name: Build Android APK
         run: |
           cd android
-          ./gradlew assembleRelease --stacktrace
+          chmod +x gradlew
+          ./gradlew assembleDebug assembleRelease --stacktrace
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         id: sign_app
-        # This step will only run if secrets are configured
-        if: env.ANDROID_SIGNING_KEY != null
-        env:
-          ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+        if: secrets.ANDROID_SIGNING_KEY != null
         with:
           releaseDirectory: android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
@@ -63,8 +61,10 @@ jobs:
           keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
-      - name: Upload APK
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: charm-release-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          name: charm-android-builds
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
