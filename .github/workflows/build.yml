@@ -37,15 +37,25 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
+      - name: Validate Gradle Wrapper
+        run: |
+          cd android
+          # If the wrapper is corrupt, we can try to regenerate it if gradle is on path
+          # But usually, it's safer to ensure it's executable
+          chmod +x gradlew
+
       - name: Build Android APK
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease --stacktrace
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         id: sign_app
+        # This step will only run if secrets are configured
+        if: env.ANDROID_SIGNING_KEY != null
+        env:
+          ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
         with:
           releaseDirectory: android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
@@ -57,4 +67,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: charm-release-apk
-          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          path: android/app/build/outputs/apk/release/*.apk

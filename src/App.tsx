@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, serverTimestamp, updateDoc, increment, addDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Heart, 
@@ -224,28 +224,97 @@ const Discover = () => {
   );
 };
 
-const Arena = () => (
-  <div className="max-w-xl mx-auto pt-24 pb-32 px-4 text-center">
-    <div className="bg-gradient-to-br from-[#0f0f0f] to-[#050505] rounded-[3rem] p-12 text-white mb-12 border border-dark-border relative overflow-hidden shadow-2xl">
-      <div className="absolute top-0 right-0 p-8 opacity-5 text-gold-500">
-        <Swords size={200} strokeWidth={1} />
-      </div>
-      <div className="relative z-10">
-        <h2 className="text-5xl font-serif italic mb-6 tracking-tight">The Midnight Duel</h2>
-        <p className="text-[#888] text-base mb-10 max-w-sm mx-auto italic font-light leading-relaxed">
-          Who possesses the most captivating presence? Stake your prestige in head-to-head combat.
-        </p>
-        <button className="bg-gold-500 text-black px-12 py-5 rounded-full font-bold text-sm tracking-[0.3em] uppercase hover:bg-gold-400 transition-all shadow-[0_10px_40px_rgba(212,175,55,0.2)] active:scale-95">
-          BEGIN DUEL
-        </button>
-        <div className="mt-8 flex items-center justify-center gap-2">
-          <Coins size={14} className="text-gold-500" />
-          <p className="text-gold-500/60 font-medium text-[10px] uppercase tracking-[0.2em]">Stakes: 10 Gilded</p>
+const Arena = () => {
+  const [activeBattles, setActiveBattles] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, "competitions"), limit(5));
+    return onSnapshot(q, (snap) => {
+      setActiveBattles(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
+
+  const handleVote = async (battleId: string, side: 'votesChallenger' | 'votesOpponent') => {
+    try {
+      const battleRef = doc(db, "competitions", battleId);
+      const voteRef = doc(db, "competitions", battleId, "votes", auth.currentUser!.uid);
+      
+      await setDoc(voteRef, {
+        voterId: auth.currentUser!.uid,
+        timestamp: serverTimestamp()
+      });
+
+      await updateDoc(battleRef, {
+        [side]: increment(1)
+      });
+      
+      alert("Vote cast with elegance.");
+    } catch (err) {
+      console.error(err);
+      alert("You have already cast your influence here.");
+    }
+  };
+
+  return (
+    <div className="max-w-xl mx-auto pt-24 pb-32 px-4 text-center">
+      <div className="bg-gradient-to-br from-[#0f0f0f] to-[#050505] rounded-[3rem] p-12 text-white mb-12 border border-dark-border relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 p-8 opacity-5 text-gold-500">
+          <Swords size={200} strokeWidth={1} />
+        </div>
+        <div className="relative z-10">
+          <h2 className="text-5xl font-serif italic mb-6 tracking-tight">The Midnight Duel</h2>
+          <p className="text-[#888] text-base mb-10 max-w-sm mx-auto italic font-light leading-relaxed">
+            Who possesses the most captivating presence? Stake your prestige in head-to-head combat.
+          </p>
+          <button className="bg-gold-500 text-black px-12 py-5 rounded-full font-bold text-sm tracking-[0.3em] uppercase hover:bg-gold-400 transition-all shadow-[0_10px_40px_rgba(212,175,55,0.2)] active:scale-95">
+            BEGIN DUEL
+          </button>
+          <div className="mt-8 flex items-center justify-center gap-2">
+            <Coins size={14} className="text-gold-500" />
+            <p className="text-gold-500/60 font-medium text-[10px] uppercase tracking-[0.2em]">Stakes: 10 Gilded</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div className="grid grid-cols-2 gap-6">
+      <div className="space-y-8 mb-12">
+        <h3 className="text-xl font-serif italic text-white text-left px-4">Live Duels</h3>
+        {activeBattles.map((battle) => (
+          <div key={battle.id} className="bg-dark-panel rounded-[2rem] border border-dark-border p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 flex flex-col items-center gap-2">
+                <div className="w-20 h-20 rounded-2xl bg-[#222] overflow-hidden border-2 border-gold-500/20">
+                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${battle.challengerId}`} className="w-full h-full object-cover grayscale" />
+                </div>
+                <button 
+                  onClick={() => handleVote(battle.id, 'votesChallenger')}
+                  className="bg-white/5 hover:bg-gold-500 hover:text-black w-full py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors"
+                >
+                  Vote ({battle.votesChallenger || 0})
+                </button>
+              </div>
+
+              <div className="text-gold-500 font-serif italic text-2xl">vs</div>
+
+              <div className="flex-1 flex flex-col items-center gap-2">
+                <div className="w-20 h-20 rounded-2xl bg-[#222] overflow-hidden border-2 border-gold-500/20">
+                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${battle.opponentId}`} className="w-full h-full object-cover grayscale" />
+                </div>
+                <button 
+                  onClick={() => handleVote(battle.id, 'votesOpponent')}
+                  className="bg-white/5 hover:bg-gold-500 hover:text-black w-full py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors"
+                >
+                  Vote ({battle.votesOpponent || 0})
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {activeBattles.length === 0 && (
+          <p className="text-[#444] italic text-sm">The Arena is currently silent...</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
       <div className="bg-dark-panel p-8 rounded-[2.5rem] border border-dark-border">
         <p className="text-[#666] font-bold text-[9px] uppercase tracking-[0.2em] mb-3">Victories</p>
         <span className="text-3xl font-serif italic text-white">0</span>
